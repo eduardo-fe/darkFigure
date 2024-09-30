@@ -121,3 +121,10 @@ gen def1 = withPartner ==0
 gen def3 = withPartner ==0 & crimeDeprived==0
 gen def2 = withPartner ==0 & crime_car==1
 gen def4 = withPartner ==0 & crime_car==1 & crimeDeprived==0
+
+gen alt_def1 = withPartner ==0
+gen alt_def2 = crimeDeprived==0
+gen alt_def3 = crime_car==1
+gen alt_def4 = withPartner ==0 & crimeDeprived==0
+gen alt_def5 = withPartner ==0 & crime_car==1
+gen alt_def6 = withPartner ==0 & crime_car==1 & crimeDeprived==0

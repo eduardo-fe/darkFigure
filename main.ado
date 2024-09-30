@@ -1,3 +1,17 @@
+/*
+	Code for "Partial Identification of the Dark Figure of Crime   
+		with survey data under misreporting errors."
+	
+	This version: 11 July 2024.
+	
+	This code call two additional files	
+		- functions.ado contains the main programs for estimation of the bounds.
+		- datapreparation.ado compiles the waves of the CSEW.
+	
+	
+
+*/
+
 include "/Users/user/Desktop/kreiderPepper/functions.ado"
 include "/Users/user/Desktop/kreiderPepper/datapreparation.ado"
 
@@ -14,6 +28,7 @@ est store des1
 estpost sum `outcome' `explanatoryVariables' if crimtype !=.
 est store des2
 
+esttab des1 des2 
 esttab des1 des2 using "/Users/user/Desktop/kreiderPepper/output/descriptives.tex", ///
 mtitle("All" "Experienced crime") ///
 	cells(mean(fmt(2)) sd(par fmt(2))) label booktabs nonum collabels(none) gaps f noobs ///
@@ -37,6 +52,11 @@ forvalues i=1/25{
 }
 matrix list mRES
 outtable using "/Users/user/Desktop/kreiderPepper/output/effect_partner.tex", replace mat(mRES) center f(%9.3f)
+
+* Note: To simplify, Table 2 in paper based on "crime_personal" and the aggregate below for "property crime"
+/*gen pc = crime_car == 1|crime_home ==1
+probit  pc whopresc female trueAge age80plus nchil higherEd drop16Ed incomDep ethi* dislikesP rural i.gor if crimtype!=., clus(clusters)
+margins, dydx(whopresc) post*/
 
 
 // 3. Dark figure of crime. 
@@ -86,8 +106,8 @@ outreg2 using "/Users/user/Desktop/kreiderPepper/output/copsknowProbit.tex", tex
 * All types
 
 * No verified group.
-local B= 199
-matrix mBounds = J(10,2,.)
+local B= 19
+matrix mBounds = J(10,3,.)
 local i =1
 local _proportion 0.5 0.75 0.9 0.95 0.99
 foreach j of local _proportion {
@@ -112,24 +132,33 @@ foreach j of local _proportion {
 	display "[",imbensManski_l,"", imbensManski_u,"]"
 	
 	matrix mBounds[`i',1] = `lb_temp'
-	matrix mBounds[`i',2] = `ub_temp'		
+	matrix mBounds[`i',3] = `ub_temp'		
 	matrix mBounds[`i'+1,1] = imbensManski_l
-	matrix mBounds[`i'+1,2] = imbensManski_u
+	matrix mBounds[`i'+1,3] = imbensManski_u
+	
+	mata:imbensManski(`_N', `ub_temp', `lb_noTemp',`ub_se', `lb_noSe')
+	
+	display "[`lb_noTemp', `ub_temp']"
+	display "[",imbensManski_l,"", imbensManski_u,"]"
+	
+	matrix mBounds[`i',2] = `lb_noTemp'	
+	matrix mBounds[`i'+1,2] = imbensManski_l
+	
 	local i = `i' + 2
 	
 }
 matrix list mBounds
 
-local B= 199
-matrix mBoundsVer = J(16,3,.)
+local B= 99
+matrix mBoundsVer = J(24,3,.)
 local i=1
-forvalues k = 1/4{
+forvalues k = 1/6{
 	forvalues r = 0.95(0.05)1{
 		qui count if crimevic==1
 		local _N= r(N)
 		
 		
-		qui bs lb =r(lb) lb_no=r(lb_no) ub=r(ub), rep(`B'):krepper copsknow crimevic, nu(`r') verified(def`k')
+		bs lb =r(lb) lb_no=r(lb_no) ub=r(ub), rep(`B'):krepper copsknow crimevic, nu(`r') verified(alt_def`k')
 		matrix v = r(table)
 		local lb_temp = v[1,1]
 		local lb_noTemp = v[1,2]
@@ -157,8 +186,9 @@ forvalues k = 1/4{
 
 
 matrix list mBoundsVer
-
-outtable using "/Users/user/Desktop/kreiderPepper/output/boundsVerified.tex" , mat(mBoundsVer) ///
+matrix rownames mBoundsVer = 0.95 . 1 . 0.95 . 1 . 0.95 . 1 . 0.95 . 1 . 0.95 . 1 . 0.95 . 1 .
+matrix colnames mBoundsVer = LB LB-No UB
+outtable using "/Users/user/Desktop/kreiderPepper/output/boundsVerified_R1.tex" , mat(mBoundsVer) ///
 	nobox center format(%9.3f) norowlab nodots replace
                      
  
@@ -169,9 +199,9 @@ replace likesPolice = . if likesPolice >5
 replace likesPolice = 6-likesPolice
 
 mivKrepper copsknow crimevic likesPolice,  nu(0.75) 
-graph export Graph "/Users/user/Desktop/kreiderPepper/output/miv_all75.jpg", replace
-mivKrepper copsknow crimevic likesPolice,  nu(0.9) 
-graph export Graph "/Users/user/Desktop/kreiderPepper/output/miv_all90.jpg", replace
+graph export  "Users/user/Desktop/kreiderPepper/output/miv_all75.jpg", replace
+mivKrepper copsknow crimevic likesPolice,  nu(0.90) 
+graph export "/Users/user/Desktop/kreiderPepper/output/miv_all90.jpg", replace
 
 
 matrix gorBounds =J(10,2,.)
@@ -208,46 +238,50 @@ spmap gorBounds2 using ukcoord if id<11, id(id)  ///
 clnumber(9) legend(pos(11) ring(0))
 
 
-* By crime type.
+// Bounds for categoreis in table 2
+// Tipo 22, 24, 25 and crime_personal and pc = crime_car == 1|crime_home ==1
 
-gen crime_property = crime_car + crime_home
-local crimetypes crime_property crime_personal tipo21 tipo24 tipo25
-foreach crtype of local crimetypes {
 
-	local B= 199
-	matrix mBounds = J(10,2,.)
-	local i =1
-	local _proportion 0.5 0.75 0.9 0.95 0.99
-	foreach j of local _proportion {
-		
-		qui{
-			count if crimevic==1
-			local _N= r(N)
-			local nu = `j'
-			
-			bs lb =r(lb) lb_no=r(lb_no) ub=r(ub), rep(`B'):krepper copsknow crimevic if `crtype==1', nu(`nu') 
-			
-			matrix v = r(table)
-			local lb_temp = v[1,1]
-			local lb_noTemp = v[1,2]
-			local ub_temp = v[1,3]
-			local lb_se = v[2,1]
-			local lb_noSe = v[2,2]
-			local ub_se = v[2,3]
-			
-			mata:imbensManski(`_N', `ub_temp', `lb_temp',`ub_se', `lb_se')
-			
-			display "[`lb_temp', `ub_temp']"
-			display "[",imbensManski_l,"", imbensManski_u,"]"
-			
-			matrix mBounds[`i',1] = `lb_temp'
-			matrix mBounds[`i',2] = `ub_temp'		
-			matrix mBounds[`i'+1,1] = imbensManski_l
-			matrix mBounds[`i'+1,2] = imbensManski_u
-			local i = `i' + 2
-		}
-		
-	}
-	matrix list mBounds
 
+local B= 199
+matrix mBounds = J(10,3,.)
+local i =1
+local _proportion 0.5 0.75 0.9 0.95 0.99
+foreach j of local _proportion {
+	
+	count if crimevic==1
+	local _N= r(N)
+	local nu = `j'
+	
+	bs lb =r(lb) lb_no=r(lb_no) ub=r(ub), rep(`B'):krepper copsknow crimevic if tipo25 ==1 , nu(`nu') 
+	
+	matrix v = r(table)
+	local lb_temp = v[1,1]
+	local lb_noTemp = v[1,2]
+	local ub_temp = v[1,3]
+	local lb_se = v[2,1]
+	local lb_noSe = v[2,2]
+	local ub_se = v[2,3]
+	
+	mata:imbensManski(`_N', `ub_temp', `lb_temp',`ub_se', `lb_se')
+	
+	display "[`lb_temp', `ub_temp']"
+	display "[",imbensManski_l,"", imbensManski_u,"]"
+	
+	matrix mBounds[`i',1] = `lb_temp'
+	matrix mBounds[`i',3] = `ub_temp'		
+	matrix mBounds[`i'+1,1] = imbensManski_l
+	matrix mBounds[`i'+1,3] = imbensManski_u
+	
+	mata:imbensManski(`_N', `ub_temp', `lb_noTemp',`ub_se', `lb_noSe')
+	
+	display "[`lb_noTemp', `ub_temp']"
+	display "[",imbensManski_l,"", imbensManski_u,"]"
+	
+	matrix mBounds[`i',2] = `lb_noTemp'	
+	matrix mBounds[`i'+1,2] = imbensManski_l
+	
+	local i = `i' + 2
+	
 }
+matrix list mBounds

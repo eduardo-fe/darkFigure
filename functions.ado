@@ -6,7 +6,7 @@
 		P(Z=1) where Z=1 iff X=W
 */
 
-//program drop mivKrepper
+program drop mivKrepper
 program mivKrepper, rclass
 	syntax varname(numeric max=3) [if] [in] , nu(numlist) [verified(varlist max=1)]
 	tempvar X L Y MIV
@@ -14,8 +14,8 @@ program mivKrepper, rclass
 		marksample touse
 		tokenize `varlist'
 							
-		gen `L'  = `1'
-		gen `X' = `2'
+		gen `L'   = `1'
+		gen `X'   = `2'
 		gen `MIV' = `3'
 
 		levelsof `MIV', local(unique_values)
@@ -71,6 +71,8 @@ program mivKrepper, rclass
 		return matrix mP = mP
 		return scalar mivL = mivL
 		return scalar mivU = mivU
+		return scalar mivLno=mivLno
+		 
 	}
 	
 	if("`verified'" == ""){
@@ -85,9 +87,9 @@ program mivKrepper, rclass
 	local lb_standardNo = r(lb_no)
 	local mivL = mivL
 	local mivU = mivU
-	twoway pcspike toPrint2 toPrint1 toPrint4 toPrint1, mlabcolor(gs10) lcolor(gs10) legend(off)|| ///
-		scatter toPrint2 toPrint1, msym(o) mlabel(toPrint2) mcolor(gs10) mlabcolor(gs10) || ///
-		scatter toPrint4 toPrint1, msym(o) mcolor(gs10) mlabcolor(gs10) mlabel(toPrint4, ) ///
+	twoway pcspike toPrint2 toPrint1 toPrint4 toPrint1, mlabcolor(gs5) lcolor(gs10) legend(off) || ///
+		scatter toPrint2 toPrint1, msym(o) mlabel(toPrint2) mcolor(gs10) mlabcolor(gs5) mlabsize(large) msize(large) || ///
+		scatter toPrint4 toPrint1, msym(o) mcolor(gs10) mlabcolor(gs5) mlabsize(large) msize(large) mlabel(toPrint4, ) ///
 		yline(`lb_standard',lcolor(black) lpattern(dash)) ///
 		  yline(`ub_standard', lcolor(black) lpattern(dash)) /// 
 		  yline(`mivL', lcolor(black)) yline(`mivU', lcolor(black)) ///
@@ -102,6 +104,7 @@ program mivKrepper, rclass
 	display "-----------------------------------------------------"
 	display ""
 	display "ATE:  " _column(16) "[" %9.4f mivL "," %9.4f mivU "]"
+	display "ATE: No over-reporting " _column(16) "[" %9.4f mivLno "," %9.4f mivU "]"
 	display "-----------------------------------------------------"
 
 end
@@ -115,25 +118,32 @@ void miv()
 
 		mL = st_matrix("mLB")
 		mU = st_matrix("mUB")
+		mLno = st_matrix("mLB_no")
+		
 		mP = st_matrix("mP")
 		R =rows(mL)
 		
 		mAuxL = J(1,1,.)
+		mAuxLno = J(1,1,.)
 		mAuxU = J(1,1,.)
 		
 		for(r = 1; r<= R; r++){
 	
 			mAuxL = mAuxL \ colmax(mL[1..r,1])
+			mAuxLno = mAuxLno \ colmax(mLno[1..r,1])
 			mAuxU = mAuxU \ colmin(mU[r..R,1])
 		
 		}
 		mAuxL[2..R+1,1]
+		mAuxLno[2..R+1,1]
 		mAuxU[2..R+1,1]
 		
 		mivL = colsum(mAuxL[2..R+1,1] :* mP)
+		mivLno = colsum(mAuxLno[2..R+1,1] :* mP)
 		mivU = colsum(mAuxU[2..R+1,1] :* mP)
 		
 		st_numscalar("mivL", mivL)
+		st_numscalar("mivLno", mivLno)
 		st_numscalar("mivU", mivU)
 		
 		
