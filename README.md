@@ -30,8 +30,9 @@ The provided Stata files are designed to analyze data from the **Crime Survey fo
 ```
 |-- /your-directory/
     |-- /outputs/               # Folder where output files will be saved
-    |-- analysis_script.do       # Main Stata file
-    |-- other_script.do          # Additional Stata files as needed
+    |-- main.ado                # Main Stata file
+    |-- datapreparation.do      # Prepare the data for analysis (run this first)
+    |-- functions.ado           # To be called from main.ado
 ```
 
 Make sure the CSEW data files are located in the correct directories and that the output folder is created before running the scripts.
