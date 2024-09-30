@@ -44,8 +44,4 @@ After setting up the directories, simply run the Stata `.do` files in the approp
 ## Contact
 
 For any questions related to the analysis or the paper, please reach out to the authors via email.
-
----
-
-**Note**: The current version is 1.1, dated September 30th, 2024. Make sure to check back for updates if any revisions or corrections are made to the scripts.
-
+ 
