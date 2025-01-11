@@ -6,7 +6,7 @@ This repository contains the Stata files used in the analysis for the paper:
 
 **"Partial Identification of the Dark Figure of Crime with Survey Data under Misreporting Errors"**
 
-The paper is currently under "revise and resubmit" status at the *Journal of Quantitative Criminology*.
+The paper is published at the *Journal of Quantitative Criminology*.
 
 ## Description
 
